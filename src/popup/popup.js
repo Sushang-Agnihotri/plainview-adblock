@@ -35,6 +35,8 @@ function render() {
     : disabledEntry ? `Protection is off for ${disabledEntry}` : 'Protection is on for this site';
 }
 
+let lastTotal = null;
+
 async function renderStats() {
   if (!tab || !host) return;
   if (typeof chrome.declarativeNetRequest.getMatchedRules !== 'function') {
@@ -70,9 +72,14 @@ async function renderStats() {
       counted++;
     }
     total = Math.max(total, counted);
-  } catch {
-    // getMatchedRules may be unavailable or rate limited; the total still works.
+    delete document.body.dataset.statsError;
+  } catch (err) {
+    // getMatchedRules can be rate limited by the browser. Keep the last good numbers.
+    document.body.dataset.statsError = String(err?.message ?? err);
+    if (lastTotal !== null) return;
   }
+  if (lastTotal !== null && total < lastTotal) return;
+  lastTotal = total;
 
   $('blockedCount').textContent = total.toLocaleString();
   const ul = $('breakdown');
@@ -105,6 +112,9 @@ async function init() {
   state = await send('getState');
   render();
   await Promise.all([renderStats(), checkPermissions()]);
+  // Pages keep loading after the popup opens: refresh the count a few times.
+  // (The browser limits how often this can be queried, so stop after a few.)
+  for (const delay of [1000, 2500, 5000]) setTimeout(() => renderStats().catch(() => {}), delay);
 }
 
 $('globalToggle').addEventListener('change', async (e) => {

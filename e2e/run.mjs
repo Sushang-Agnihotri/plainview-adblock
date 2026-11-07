@@ -108,6 +108,16 @@ const port = server.address().port;
 // ---------------------------------------------------------------- run ------
 
 const results = [];
+// Poll until `fn` returns truthy (slow CI machines need more than a fixed delay).
+async function waitFor(fn, timeout = 4000) {
+  const end = Date.now() + timeout;
+  for (;;) {
+    const v = await fn().catch(() => false);
+    if (v || Date.now() > end) return v;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
+const sawTracker = () => waitFor(async () => hits.some((h) => h.startsWith(trackerDomain)));
 const perf = {};
 
 async function measureHeavy(page, runs = 7) {
@@ -166,10 +176,10 @@ try {
   await new Promise((r) => setTimeout(r, 300));
   check(`tracker request blocked (${trackerDomain})`, !hits.some((h) => h.startsWith(trackerDomain)));
   check('page content still loads', (await display('content')) !== 'none');
-  check(`generic hiding, on demand (${genericSelector})`, (await display('generic')) === 'none');
+  check(`generic hiding, on demand (${genericSelector})`, await waitFor(async () => (await display('generic')) === 'none'));
   check(`always-on generic hiding (${alwaysSelector})`, (await display('always')) === 'none');
   await new Promise((r) => setTimeout(r, 600));
-  check(`element added after load is hidden (${lateSelector})`, (await display('late')) === 'none');
+  check(`element added after load is hidden (${lateSelector})`, await waitFor(async () => (await display('late')) === 'none'));
 
   // A list exception (#@#) on a specific site must keep the element visible there.
   await page.goto(pageUrl(excHost), { waitUntil: 'load' });
@@ -179,7 +189,7 @@ try {
   // Site-specific hiding
   await page.goto(pageUrl(specificDomain), { waitUntil: 'load' });
   await new Promise((r) => setTimeout(r, 300));
-  check(`site-specific hiding (${specificDomain} ${specificSelector})`, (await display('specific')) === 'none');
+  check(`site-specific hiding (${specificDomain} ${specificSelector})`, await waitFor(async () => (await display('specific')) === 'none'));
 
   // Extension page used to drive settings like a user would.
   const ui = await browser.newPage();
@@ -199,7 +209,7 @@ try {
   await page.goto(pageUrl(SITE), { waitUntil: 'load' });
   await new Promise((r) => setTimeout(r, 300));
   check('custom network filter blocks', !hits.some((h) => h.startsWith('custom-block.plainview-test.net')));
-  check('custom hiding filter hides', (await display('custom')) === 'none');
+  check('custom hiding filter hides', await waitFor(async () => (await display('custom')) === 'none'));
 
   // Pop-up blocking
   if (popupDomain) {
@@ -216,7 +226,7 @@ try {
   hits.length = 0;
   await page.goto(pageUrl(SITE), { waitUntil: 'load' });
   await new Promise((r) => setTimeout(r, 300));
-  check('disabled site: tracker allowed', hits.some((h) => h.startsWith(trackerDomain)));
+  check('disabled site: tracker allowed', await sawTracker());
   await new Promise((r) => setTimeout(r, 300));
   check('disabled site: no element hiding', (await display('generic')) !== 'none' && (await display('custom')) !== 'none' && (await display('always')) !== 'none');
   await send({ type: 'setSiteEnabled', host: SITE, enabled: true });
@@ -227,7 +237,7 @@ try {
   hits.length = 0;
   await page.goto(pageUrl(SITE), { waitUntil: 'load' });
   await new Promise((r) => setTimeout(r, 300));
-  check('pause disables everything', pausedRulesets.length === 0 && hits.some((h) => h.startsWith(trackerDomain)));
+  check('pause disables everything', pausedRulesets.length === 0 && await sawTracker());
   await send({ type: 'setPaused', paused: false });
 
   // Turning a list off
@@ -235,7 +245,7 @@ try {
   hits.length = 0;
   await page.goto(pageUrl(SITE), { waitUntil: 'load' });
   await new Promise((r) => setTimeout(r, 300));
-  check('disabling Trackers list stops tracker blocking', hits.some((h) => h.startsWith(trackerDomain)));
+  check('disabling Trackers list stops tracker blocking', await sawTracker());
   await send({ type: 'setListEnabled', id: 'privacy', enabled: true });
 
   // Popup page renders
@@ -249,9 +259,12 @@ try {
   await new Promise((r) => setTimeout(r, 600));
   const popupStatus = await popup.$eval('#siteStatus', (e) => e.textContent);
   const popupHost = await popup.$eval('#host', (e) => e.textContent);
-  const popupCount = Number((await popup.$eval('#blockedCount', (e) => e.textContent)).replace(/\D/g, ''));
+  const readCount = async () => Number((await popup.$eval('#blockedCount', (e) => e.textContent)).replace(/\D/g, ''));
+  await waitFor(async () => (await readCount()) >= 2, 6000);
+  const popupCount = await readCount();
+  const statsError = await popup.$eval('body', (b) => b.dataset.statsError || '');
   check('popup shows the site and status', popupHost === SITE && !/error/i.test(popupStatus), `${popupHost}: ${popupStatus}`);
-  check('popup shows blocked request count', popupCount >= 2, `${popupCount} blocked`);
+  check('popup shows blocked request count', popupCount >= 2, `${popupCount} blocked${statsError ? `, error: ${statsError}` : ''}`);
   await popup.close().catch(() => {});
 
   // Performance: average load of the test page, and service worker heap.
