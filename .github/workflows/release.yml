@@ -1,0 +1,87 @@
+name: Release
+
+# Publishes a GitHub release with the Chromium and Firefox packages:
+#  • when a version tag (v1.2.3) is pushed
+#  • every Monday with freshly downloaded filter lists (version 1.2.3.<run number>)
+#  • on demand from the Actions tab
+on:
+  push:
+    tags: ['v*']
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run fetch-lists
+
+      - name: Work out version
+        id: ver
+        run: |
+          base=$(node -p "require('./package.json').version")
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            if [ "${GITHUB_REF_NAME}" != "v${base}" ]; then
+              echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${base}" >&2
+              exit 1
+            fi
+            echo "version=${base}" >> "$GITHUB_OUTPUT"
+            echo "kind=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${base}.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "build=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+            echo "kind=filters" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        run: npm run build
+        env:
+          PV_BUILD_NUMBER: ${{ steps.ver.outputs.build }}
+
+      - name: End-to-end tests (Chrome)
+        run: npm run test:e2e
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          KIND: ${{ steps.ver.outputs.kind }}
+        run: |
+          tag="v${VERSION}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; nothing to do."
+            exit 0
+          fi
+          if [ "$KIND" = "filters" ]; then
+            title="PlainView ${VERSION} (filter list update)"
+            notes="Weekly rebuild with the latest EasyList, EasyPrivacy, EasyList Cookie List and URLhaus filters. No code changes since the last release."
+          else
+            title="PlainView ${VERSION}"
+            notes=$(awk "/^## \\[${VERSION}\\]/{f=1;next} /^## \\[/{f=0} f" CHANGELOG.md)
+          fi
+          notes="${notes}
+
+          ### Install
+          - **Chrome / Edge / Brave:** download the \`chromium.zip\`, unzip it, open \`chrome://extensions\`, enable Developer mode, click *Load unpacked* and pick the folder.
+          - **Firefox (experimental):** download the \`firefox.zip\` and load it from \`about:debugging\`.
+
+          See the README for details."
+          gh release create "$tag" dist/*.zip --title "$title" --notes "$notes" --target "$GITHUB_SHA"

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PlainView settings</title>
+  <link rel="stylesheet" href="../ui/common.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header>
+      <img src="../icons/icon-48.png" width="36" height="36" alt="">
+      <div>
+        <h1>PlainView settings</h1>
+        <p class="muted small" id="versionLine"></p>
+      </div>
+      <label class="pause">
+        <span id="pauseLabel">Enabled everywhere</span>
+        <span class="switch"><input type="checkbox" id="globalToggle" aria-label="PlainView enabled everywhere"><span></span></span>
+      </label>
+    </header>
+
+    <nav aria-label="Sections">
+      <a href="#lists">Protection</a>
+      <a href="#sites">Disabled sites</a>
+      <a href="#custom">Custom filters</a>
+      <a href="#backup">Backup</a>
+      <a href="#about">About &amp; privacy</a>
+    </nav>
+
+    <section id="lists">
+      <h2>Protection</h2>
+      <p class="muted">Community-maintained filter lists, compiled into the extension so the browser can block requests itself without slowing pages down.</p>
+      <div id="listContainer" class="cards"></div>
+    </section>
+
+    <section id="sites">
+      <h2>Disabled sites</h2>
+      <p class="muted">PlainView does nothing on these sites or their subdomains. You can also toggle a site from the toolbar popup.</p>
+      <form id="addSiteForm" class="row">
+        <input type="text" id="siteInput" placeholder="example.com" aria-label="Site to disable" autocomplete="off" spellcheck="false">
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      <p class="error small" id="siteError" hidden></p>
+      <ul id="siteList" class="site-list"></ul>
+      <p class="muted small" id="noSites">No sites disabled.</p>
+    </section>
+
+    <section id="custom">
+      <h2>Custom filters</h2>
+      <p class="muted">One filter per line, in Adblock Plus syntax. Examples:</p>
+      <pre class="examples">ads.example.com                 block a domain everywhere
+||tracker.example^$third-party  block a domain when loaded by other sites
+example.com##.sidebar-promo     hide an element on one site
+##.newsletter-popup             hide an element on every site
+@@||example.com^$document       allow everything on a site
+! comment</pre>
+      <textarea id="customRules" rows="12" spellcheck="false" aria-label="Custom filters"></textarea>
+      <div class="row">
+        <button class="btn primary" id="saveCustom">Save filters</button>
+        <span class="small" id="customStatus" role="status"></span>
+      </div>
+      <ul class="small error-list" id="customErrors"></ul>
+    </section>
+
+    <section id="backup">
+      <h2>Backup</h2>
+      <p class="muted">Export your settings, disabled sites and custom filters to a file, or restore them from one.</p>
+      <div class="row">
+        <button class="btn" id="exportBtn">Export settings</button>
+        <label class="btn" for="importFile">Import settings…</label>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <span class="small" id="backupStatus" role="status"></span>
+      </div>
+    </section>
+
+    <section id="about">
+      <h2>About &amp; privacy</h2>
+      <ul class="about">
+        <li><strong>No data collection.</strong> PlainView has no servers, no analytics and no accounts. It never makes network requests of its own. Settings stay in your browser's local storage.</li>
+        <li><strong>Why it needs access to all sites:</strong> to hide empty ad slots and cookie banners on the pages you visit. It does not read or record page content.</li>
+        <li><strong>Limitations:</strong> no blocker stops every ad. Sites such as YouTube serve ads from the same servers as their videos and change how they deliver them often, so in-video ads may still appear. Filter lists update when PlainView is updated.</li>
+        <li><strong>Hiding cookie banners</strong> removes them from view. It does not accept or reject cookies on your behalf.</li>
+      </ul>
+      <p class="small muted" id="listsBuilt"></p>
+      <p class="small">
+        <a href="https://github.com/Sushang-Agnihotri/plainview-adblock" target="_blank" rel="noopener">Source code</a> ·
+        <a href="https://github.com/Sushang-Agnihotri/plainview-adblock/issues" target="_blank" rel="noopener">Report a problem</a> ·
+        MIT License
+      </p>
+    </section>
+  </div>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

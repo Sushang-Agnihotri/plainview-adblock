@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PlainView</title>
+  <link rel="stylesheet" href="../ui/common.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon-32.png" width="22" height="22" alt="">
+    <strong>PlainView</strong>
+    <label class="pause" title="Turn PlainView off everywhere">
+      <span class="small muted" id="pauseLabel">On</span>
+      <span class="switch"><input type="checkbox" id="globalToggle" aria-label="PlainView enabled everywhere"><span></span></span>
+    </label>
+  </header>
+
+  <main>
+    <section class="site" id="siteSection">
+      <div class="site-row">
+        <div class="site-info">
+          <div class="host" id="host">—</div>
+          <div class="small muted" id="siteStatus">Protection is on for this site</div>
+        </div>
+        <span class="switch big"><input type="checkbox" id="siteToggle" aria-label="Protection on this site"><span></span></span>
+      </div>
+      <button class="btn primary reload" id="reloadBtn" hidden>Reload page to apply</button>
+    </section>
+
+    <section class="unsupported muted small" id="unsupported" hidden>
+      PlainView does not run on browser pages like this one.
+    </section>
+
+    <section class="stats" id="statsSection">
+      <div class="count"><span id="blockedCount">0</span><span class="small muted" id="countLabel">requests blocked on this page</span></div>
+      <ul class="chips" id="breakdown"></ul>
+      <div class="small muted" id="popupsLine"></div>
+    </section>
+
+    <section class="perm" id="permSection" hidden>
+      <p class="small">Allow PlainView to hide ad placeholders and cookie banners on websites.</p>
+      <button class="btn primary" id="grantBtn">Allow on all websites</button>
+    </section>
+
+    <section class="actions">
+      <button class="btn" id="pickBtn" title="Click an element on the page to hide it permanently">Hide an element</button>
+      <button class="btn" id="settingsBtn">Settings</button>
+    </section>
+  </main>
+
+  <footer class="small muted">Free &amp; open source · nothing leaves your device</footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

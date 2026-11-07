@@ -1,0 +1,11 @@
+node_modules/
+build/
+dist/
+filters/raw/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+*.pem
+*.crx

@@ -1,0 +1,31 @@
+body { width: 320px; }
+header {
+  display: flex; align-items: center; gap: 8px; padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+header strong { font-size: 15px; }
+.pause { margin-left: auto; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+main { padding: 12px 14px; display: grid; gap: 12px; }
+section { border-radius: var(--radius); }
+.site { background: var(--surface); border: 1px solid var(--border); padding: 12px; display: grid; gap: 10px; }
+.site-row { display: flex; align-items: center; gap: 12px; }
+.site-info { min-width: 0; flex: 1; }
+.host { font-weight: 600; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.switch.big { width: 48px; height: 26px; }
+.switch.big span::after { width: 20px; height: 20px; }
+.switch.big input:checked + span::after { transform: translateX(22px); }
+.reload { width: 100%; }
+.stats { padding: 2px 2px 0; }
+.count { display: flex; align-items: baseline; gap: 8px; }
+#blockedCount { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.chips { list-style: none; padding: 0; margin: 8px 0 4px; display: flex; flex-wrap: wrap; gap: 6px; }
+.chips li {
+  font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--muted);
+}
+.chips li b { color: var(--text); font-weight: 600; }
+.perm { border: 1px solid var(--warn); padding: 10px 12px; }
+.perm p { margin: 0 0 8px; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+footer { padding: 10px 14px 12px; border-top: 1px solid var(--border); text-align: center; }
+body.paused .site, body.paused .stats { opacity: .55; }
